@@ -7,50 +7,80 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Illuminate\View\View;
-use App\Providers\RouteServiceProvider;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
+    // Show registration form
     public function create(): View
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+    // Store new user
     public function store(Request $request): RedirectResponse
     {
-    
-    $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-        'password' => ['required', 'confirmed'],
-    ]);
+        $request->validate([
+            'name' => ['required','string','max:255'],
+            'email' => ['required','string','email','max:255','unique:users'],
+            'password' => ['required','confirmed'],
+        ]);
 
-    // ✅ Secure password hashing
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-    ]);
+        $user = User::create([
+            'name' => $request->name,
+            'email'=> $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-    event(new Registered($user));
+        event(new Registered($user));
 
-    // ❌ Ye hata do (warna dashboard le jayega)
-    // Auth::login($user);
+        return back()->with('success', 'User registered successfully!');
+    }
 
-    // ✅ Wahi register page reload hoga success message ke sath
-    return back()->with('success', 'You are registered successfully!');
-}
+    // Show all users (Dashboard)
+    public function index(): View
+    {
+        $users = User::all();
+        return view('dashboard', compact('users'));
+    }
 
+    // Edit user
+    public function edit($id): View
+    {
+        $user = User::findOrFail($id);
+        return view('edit', compact('user'));
+    }
+
+    // Update user
+    public function update(Request $request, $id): RedirectResponse
+    {
+        $request->validate([
+            'name' => ['required','string','max:255'],
+            'email' => ['required','string','email','max:255','unique:users,email,'.$id],
+            'password' => ['nullable','confirmed'], // optional
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        // // Update password only if entered
+        // if ($request->password) {
+        //     $user->password = Hash::make($request->password);
+        // }
+
+        $user->save();
+
+        return redirect()->route('users.index')->with('success','User updated successfully!');
+    }
+
+    // Delete user
+    public function destroy($id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return back()->with('success','User deleted successfully!');
+    }
 }
