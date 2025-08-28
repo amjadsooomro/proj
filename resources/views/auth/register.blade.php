@@ -85,6 +85,11 @@
             <x-primary-button>
                 {{ __('Register') }}
             </x-primary-button>
+ <div class="p-5">
+             <!-- Login Link -->
+   
         </div>
+        </div>
+
     </form>
 </x-guest-layout>
