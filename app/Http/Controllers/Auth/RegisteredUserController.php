@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Providers\RouteServiceProvider;
 
 class RegisteredUserController extends Controller
 {
@@ -29,25 +30,27 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        
+    
     $request->validate([
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
         'password' => ['required', 'confirmed'],
     ]);
 
-    // User create ho raha hai (without hashing)
+    // ✅ Secure password hashing
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
-        'password' => $request->password, // ⚠️ plain text password (NOT secure)
+        'password' => Hash::make($request->password),
     ]);
 
     event(new Registered($user));
 
-    Auth::login($user);
+    // ❌ Ye hata do (warna dashboard le jayega)
+    // Auth::login($user);
 
-    return redirect(route('dashboard', absolute: false));
+    // ✅ Wahi register page reload hoga success message ke sath
+    return back()->with('success', 'You are registered successfully!');
 }
 
 }
